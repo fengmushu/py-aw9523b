@@ -80,22 +80,34 @@ def aw_dump():
 
 def aw_test():
 	for i in range(0, 12):
-		print("PIN: ", i)
+		# print("PIN: ", i)
 		aw_write(P1_0 + i, 255)
 		time.sleep(0.1)
 		# lower brightness
 		aw_write(P1_0 + i, 6 + i)
 
 	for i in range(12, -1, -1):
-		print("PIN: ", i)
-		# for brightness in range(0, 255, 50):
+		# print("PIN: ", i)
 		aw_write(P1_0 + i, 255)
 		time.sleep(0.1)
 		# lower brightness
 		aw_write(P1_0 + i, 18-i)
+
+	for i in range(0, 3):
+		aw_onoff(0, 12, 255)
+		time.sleep(0.3)
+		aw_onoff(0, 12, 0)
+		time.sleep(0.1)
+
 	return 0
 
+def aw_onoff(begin, end, value):
+	print("set from", begin, "to", end, "value", value)
+	for i in range(begin, end):
+		aw_write(P1_0 + i, value)
+
 def aw_selftest():
+	aw_init
 	aw_dump()
 	aw_test()
 
@@ -108,7 +120,7 @@ def aw_autotest():
 
 	counter=0
 	while 1:
-		rand = random.randint(20,200)
+		rand = random.randint(10,40)
 		aw_write(P1_0, 255)
 		print("Power on", counter, " waiting... ", rand, "seconds")
 		time.sleep(rand)
@@ -125,17 +137,20 @@ def usage(*err):
 	print("\t-i init aw 9523 driver")
 	print('\t-s selftest after init')
 	print('\t-a autotest mode do test')
-	print("\t<-n N -v V> gpio number and value to set/get N:[0-15], V:[0-255]")
+	print("\t-n <0-15> -v <0-255> gpio number and value to set/get")
+	print('\t-b <begin:0-15> -e <end:begin-15> -v <value:0-255>, set the value of pin from begin to end')
 	print("\t")
 
 def main(*args):
 	cmd=None
+	begin=-1
+	end=-1
 	gpio=-1
 	value=-1
 	argv=sys.argv[1:]
 
 	try:
-		opts, args = getopt.getopt(argv, "sain:v:")
+		opts, args = getopt.getopt(argv, "sain:v:b:e:")
 	
 	except:
 		usage("exception: error args", argv)
@@ -154,20 +169,25 @@ def main(*args):
 			cmd=aw_autotest
 		elif opt in ['-n']:
 			gpio=int(arg)
+		elif opt in ['-b']:
+			begin=int(arg)
+		elif opt in ['-e']:
+			end=int(arg)
 		elif opt in ['-v']:
 			value=int(arg)
-
-	print("CMD:", cmd, "set/get gpio", gpio, value)
 
 	if cmd != None:
 		cmd()
 
-	if gpio >=0 :
+	if gpio >= 0:
 		if value >= 0:
 			aw_write(P1_0 + gpio, value)
 		else:
 			value = aw_read(P1_0 + gpio)
 			return value
+	if begin >= 0:
+		if end >= 0:
+			aw_onoff(begin, end, value)
 
 	# aw_test()
 	# aw_dump()
