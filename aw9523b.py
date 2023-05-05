@@ -3,6 +3,8 @@
 import smbus
 import time
 import random
+import sys
+import getopt
 
 bus = smbus.SMBus(1)
 addr = 0x5b
@@ -77,14 +79,33 @@ def aw_dump():
 	return 0
 
 def aw_test():
-	for i in range(0, 8):
+	for i in range(0, 12):
 		print("PIN: ", i)
-		for brightness in range(0, 255, 50):
-			aw_write(P1_0 + i, brightness)
-			time.sleep(0.1)
+		aw_write(P1_0 + i, 255)
+		time.sleep(0.1)
+		# lower brightness
+		aw_write(P1_0 + i, 6 + i)
+
+	for i in range(12, -1, -1):
+		print("PIN: ", i)
+		# for brightness in range(0, 255, 50):
+		aw_write(P1_0 + i, 255)
+		time.sleep(0.1)
+		# lower brightness
+		aw_write(P1_0 + i, 18-i)
 	return 0
 
-def aw_recycle():
+def aw_selftest():
+	aw_dump()
+	aw_test()
+
+def aw_autotest():
+	# reset all gpio
+	aw_init()
+
+	# auto test each gpio
+	aw_test()
+
 	counter=0
 	while 1:
 		rand = random.randint(20,200)
@@ -92,17 +113,65 @@ def aw_recycle():
 		print("Power on", counter, " waiting... ", rand, "seconds")
 		time.sleep(rand)
 		aw_write(P1_0, 0)
-		counter = counter + 1
 		# time.sleep(3)
 		aw_test()
+		counter = counter + 1
 	return
 
 
-def main():
-	aw_init()
-	aw_test()
-	aw_dump()
-	aw_recycle()
+def usage(*err):
+	print(*err)
+	print("\nhelp:")
+	print("\t-i init aw 9523 driver")
+	print('\t-s selftest after init')
+	print('\t-a autotest mode do test')
+	print("\t<-n N -v V> gpio number and value to set/get N:[0-15], V:[0-255]")
+	print("\t")
+
+def main(*args):
+	cmd=None
+	gpio=-1
+	value=-1
+	argv=sys.argv[1:]
+
+	try:
+		opts, args = getopt.getopt(argv, "sain:v:")
+	
+	except:
+		usage("exception: error args", argv)
+		return -1
+
+	if len(opts) <= 0:
+		usage("---")
+		return -1
+
+	for opt, arg in opts:
+		if opt in ['-i']:
+			cmd=aw_init
+		elif opt in ['-s']:
+			cmd=aw_selftest
+		elif opt in ['-a']:
+			cmd=aw_autotest
+		elif opt in ['-n']:
+			gpio=int(arg)
+		elif opt in ['-v']:
+			value=int(arg)
+
+	print("CMD:", cmd, "set/get gpio", gpio, value)
+
+	if cmd != None:
+		cmd()
+
+	if gpio >=0 :
+		if value >= 0:
+			aw_write(P1_0 + gpio, value)
+		else:
+			value = aw_read(P1_0 + gpio)
+			return value
+
+	# aw_test()
+	# aw_dump()
+	# aw_autotest()
 
 if __name__ == "__main__":
     main()
