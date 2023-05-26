@@ -11,91 +11,183 @@ import serial
 import time
 from hexdump import hexdump
 
-PORT='/dev/ttyUSB1'
-
 DATA_ioset=[0x3a, 0x1, 0x0, 0xA]
 DATA_delay=[0x3c, 0x05, 1, 0x0, 0x64]
 
 DATA_open 	=[0x3b, 	0,1,0,1,0,1, 	0,1,0,1,0,1,]
 DATA_min 	=[0x3b, 	1,0,1,0,1,0, 	1,0,1,0,1,0,]
 DATA_halt 	=[0x3b, 	1,1,1,1,1,1, 	1,1,1,1,1,1,]
+DATA_oops 	=[0x3b, 	0,0,0,0,0,0, 	0,0,0,0,0,0,]
 
-DATA_sc_sd=[
-	[0x3b, 	0,1,0,1,0,1,	0,1,0,1,0,1,],	# open
-	[0x3b,	1,0,0,1,0,1,	1,0,0,1,0,1,],	# 15db
-	[0x3b,	1,0,0,1,0,1,	0,1,0,1,1,0,],	# 25db
-	[0x3b,	1,0,0,1,0,1,	1,0,0,1,1,0,],	# 35db
-	[0x3b,	0,1,0,1,1,0,	1,0,0,1,0,1,],	# 40db
-	[0x3b,	1,0,0,1,0,1,	0,1,1,0,0,1,],	# 45db
-	[0x3b,	0,1,0,1,1,0,	0,1,0,1,1,0,],	# 50db
-	[0x3b,	1,0,0,1,0,1,	1,0,1,0,0,1,],	# 55db
-	[0x3b,	1,0,0,1,0,1,	0,1,1,0,1,0,],	# 65db
-	[0x3b,	0,1,0,1,1,0,	1,0,0,1,1,0,],	# 60db
-	[0x3b,	0,1,0,1,1,0,	0,1,1,0,0,1,],	# 70db
-	[0x3b,	1,0,0,1,0,1,	1,0,1,0,1,0,],	# 75db
-	[0x3b,	0,1,1,0,0,1,	0,1,1,0,0,1,],	# 80db
-	]
+class AttenGear(object):
+	def __init__(self, model, switchs, values):
+		gears=[]
+		atten_sw={0:0,}
 
-# SX_MA=0x2A	# b101010
+		for sw in range(0, 2**switchs, 1):
+			bm=2**switchs
+			vi=len(values)-1
+			av=[]
+			atn=0
+			while bm > 0 and vi >= 0:
+				# print(bm, vi)
+				b = sw & 0x1
+				av.append(b)
+				av.append(1-b)
+				if b > 0:
+					atn += values[vi]
+				vi -= 1
+				sw >>= 1
+				bm >>= 1
+			# convert sw to bitmap or list
+			atten_sw.update({atn: av})
+			gears.append(atn)
 
-# SC_10=0x29	# b101001
-# SC_20=0x1A	# b011010
-# SC_30=0x19	# b011001
-# SC_40=0x26	# b100110
-# SC_50=0x25	# b100101
-# SC_60=0x16	# b010110
-# SC_70=0x15	# b010101
+		gears.sort()
 
-# SD_05=0x29	# b101001
-# SD_30=0x1A	# b011010
-# SD_35=0x19	# b011001
-# SD_40=0x26	# b100110
-# SD_45=0x25	# b100101
-# SD_70=0x16	# b010110
-# SD_75=0x15	# b010101
+		self.switchs=switchs
+		self.gears=gears
+		self.model=model
+		self.atten_sw=atten_sw
+		self.busy=[]
 
-# SG_05=0x26	# b100110
-# SG_10=0x29	# b101001
-# SG_15=0x25	# b100101
-# SG_20=0x1A	# b011010
-# SG_25=0x16	# b010110
-# SG_30=0x19	# b011001
-# SG_35=0x15	# b010101
+	def Dump(self):
+		print(self.model, "gears:", len(self.atten_sw))
+		for gi in self.gears:
+			print('\t{:02d}'.format(gi), self.atten_sw.get(gi))
+		print("")
 
-def self_test(ser):
-	ser.write(DATA_min)
-	time.sleep(1)
-	ser.write(DATA_open)
-	time.sleep(1)
-	ser.write(DATA_halt)
+	def GetModel(self):
+		return self.model
+
+	def GetGeers(self):
+		return self.gears
+
+	def GetAtten(self, gi):
+		return self.atten_sw.get(gi)
+
+class AttenGroup(object):
+	def __init__(self, serial_number, serial, units):
+		self.serial_number=serial_number
+		self.units=units
+		self.serial=serial
+		self.gears=[]
+		self.combo={}
+
+		# init step and maps
+		print(self.serial_number, "have", len(units), "unit")
+		for au in units:
+			au.Dump()
+
+		def __gears_init(self, layers):
+			combo=0
+			for li in range(0, len(layers), 1):
+				combo += layers[li]
+
+			# print("---", combo, ":", layers)
+			# TODO: filter some combo
+			self.combo.update({combo:layers.copy()})
+
+		layers=[]
+		self.travUnits(layers, __gears_init)
+		self.gears.extend(self.combo.keys())
+		self.gears.sort()
+		self.gears.reverse()
+
+		# print(self.gears)
+		# print(self.combo)
+	def Dump(self):
+		print(" Atten group:", self.serial_number, "DUMP")
+		print("------------------------------")
+		for ge in self.gears:
+			print("Gear:", ge, "\t", self.combo[ge])
+
+
+	def travUnits(self, layers, cb_func):
+		li = len(layers)
+		if li == len(self.units):
+			# end of traval
+			cb_func(self, layers)
+			return True
+		for gv in self.units[li].GetGeers():
+			if gv <= 0:
+				continue
+			layers.append(gv)
+			gi = layers[li]
+			# print("layer:", li, layers)
+			if self.travUnits(layers, cb_func) != True:
+				return False
+			layers.pop()
+		return True
+
+	def SetValue(self, value):
+		print("\n==============================")
+		print("-",self.serial_number, "Adjust to:", value, "db -\n")
+		dsmu=[]
+		print("------------------------------")
+		for ge in self.gears:
+			if value >= ge:
+				for ui in range(0, len(self.combo[ge]), 1):
+					ue = self.combo[ge][ui]
+					usw = self.units[ui].GetAtten(ue)
+					dsmu.extend(usw)
+					print("", self.units[ui].GetModel(), ue, "\t", usw)
+				value -= ge
+				break
+		print("------------------------------")
+
+		print("There's", value, "db loss")
+		self.serial.WriteIO(dsmu)
+		return value
+
+class SerialttyUSB(object):
+	def __init__(self, ser, ttyUSB):
+		ser.baudrate=115200
+		ser.port=ttyUSB
+		ser.xonxoff=0
+		ser.rtscts=0
+		ser.parity='N'
+		ser.bytesize=8
+		ser.open()
+		# ser.write(DATA_oops)
+		ser.write(DATA_min)
+		time.sleep(0.1)
+		ser.write(DATA_open)
+		time.sleep(0.1)
+		ser.write(DATA_halt)
+		self.serial=ser
+	
+	def WriteIO(self, ds):
+		io_w=[0x3b,]
+		io_w.extend(ds)
+		print("serial io:", io_w)
+		self.serial.write(io_w)
+		time.sleep(0.1)
+		self.serial.write(DATA_halt)
+
+PORT = '/dev/ttyUSB0'
 
 if __name__ == '__main__':
 	if len(sys.argv) > 1:
 		PORT = sys.argv[1]
 
+	atten = 113
+	if len(sys.argv) > 2:
+		atten = int(sys.argv[2])
+
 	sys.stdout.write("serial port: {!r}\n".format(PORT))
 	sys.argv[1:] = ['-v']
 
-	ser=serial.Serial()
-	ser.baudrate=115200
-	ser.port=PORT
-	ser.xonxoff=0
-	ser.rtscts=0
-	ser.parity='N'
-	ser.bytesize=8
+	Ser = SerialttyUSB(serial.Serial(), PORT)
+	atten_sc = AttenGear("HP33321-SC", 3, [40, 20, 10])
+	atten_sd = AttenGear("HP33321-SD", 3, [30, 40, 5])
+	atten_sg = AttenGear("HP33321-SG", 3, [20, 5, 10])
 
-	ser.open()
-	self_test(ser)
-	# ser.write(DATA_ioset)
-	# ser.write(DATA_delay)
+	atten_gp_sc_sg_sd = AttenGroup("SC-SG-SD", Ser, [atten_sc, atten_sg, atten_sd])
+	# atten_gp_sc_sg_sd.Dump()
 
-	# set open drian
-	for step in range(0, 13, 1):
-		print(step, hexdump(DATA_sc_sd[step]))
-		ser.write(DATA_sc_sd[step])
-		time.sleep(0.3)
-	
-	ser.write(DATA_halt)
-	
-	ser.close()
+	atten_gp_sc_sg_sd.SetValue(atten)
 
+	# atten_gp_sc_sg = AttenGroup("SC-SG", Ser, [atten_sc, atten_sg])
+	# atten_gp_sc_sg.SetValue(atten)
+	# atten_gp_sc_sg.SetValue2(atten)
