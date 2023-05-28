@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # This file is part of pySerial - Cross platform serial port support for Python
 # (C) 2016 Chris Liechti <cliechti@gmx.net>
@@ -9,6 +9,7 @@ import sys
 import os
 import serial
 import time
+import getopt
 from hexdump import hexdump
 
 DATA_ioset=[0x3a, 0x1, 0x0, 0xA]
@@ -149,12 +150,8 @@ class SerialttyUSB(object):
 		ser.parity='N'
 		ser.bytesize=8
 		ser.open()
-		# ser.write(DATA_oops)
-		ser.write(DATA_min)
-		time.sleep(0.1)
-		ser.write(DATA_open)
-		time.sleep(0.1)
 		ser.write(DATA_halt)
+		time.sleep(0.1)
 		self.serial=ser
 	
 	def WriteIO(self, ds):
@@ -164,30 +161,74 @@ class SerialttyUSB(object):
 		self.serial.write(io_w)
 		time.sleep(0.1)
 		self.serial.write(DATA_halt)
+		time.sleep(0.1)
 
-PORT = '/dev/ttyUSB0'
+	def SetHalt(self):
+		self.serial.write(DATA_halt)
+		time.sleep(0.1)
+
+	def SetFull(self):
+		self.serial.write(DATA_oops)
+		time.sleep(0.1)
+
+def UnitTest(ser):
+	print("Self unit test action...")
+	ser.SetFull()
+	time.sleep(1)
+	ser.SetHalt()
+	time.sleep(1)
+	exit(0)
+
+def Usage():
+	print("For example:")
+	print("\t./geehy-io.py -D </dev/ttyUSB0> -v 103")
+	exit(-1)
 
 if __name__ == '__main__':
-	if len(sys.argv) > 1:
-		PORT = sys.argv[1]
+	argv=sys.argv[1:]
 
-	atten = 113
-	if len(sys.argv) > 2:
-		atten = int(sys.argv[2])
+	try:
+		opts, args = getopt.getopt(argv, "D:v:t")
+	except:
+		Usage()
 
-	sys.stdout.write("serial port: {!r}\n".format(PORT))
-	sys.argv[1:] = ['-v']
+	atten=None
+	unit_test=None
+	for opt, arg in opts:
+		if opt in ['-D']:
+			ttyX=arg
+		if opt in ['-v']:
+			atten=int(arg)
+		if opt in ['-t']:
+			unit_test = True
 
-	Ser = SerialttyUSB(serial.Serial(), PORT)
+	try:
+		ttyX
+	except:
+		ttyX='/dev/ttyUSB0'
+
+	sys.stdout.write("serial port: {!r}\n".format(ttyX))
+
+	Ser = SerialttyUSB(serial.Serial(), ttyX)
 	atten_sc = AttenGear("HP33321-SC", 3, [40, 20, 10])
 	atten_sd = AttenGear("HP33321-SD", 3, [30, 40, 5])
 	atten_sg = AttenGear("HP33321-SG", 3, [20, 5, 10])
 
-	atten_gp_sc_sg_sd = AttenGroup("SC-SG-SD", Ser, [atten_sc, atten_sg, atten_sd])
-	# atten_gp_sc_sg_sd.Dump()
+	if unit_test == True:
+		UnitTest(Ser)
 
-	atten_gp_sc_sg_sd.SetValue(atten)
+	if atten == None:
+		Usage()
+	# atten_gp_sc_sg_sd = AttenGroup("SC-SG-SD", Ser, [atten_sc, atten_sg, atten_sd])
+	# atten_gp_sc_sg_sd.Dump()
+	# atten_gp_sc_sg_sd.SetValue(atten)
 
 	# atten_gp_sc_sg = AttenGroup("SC-SG", Ser, [atten_sc, atten_sg])
+	atten_gp_sc_sg = AttenGroup("SC-SG", Ser, [atten_sg, atten_sc])
+	atten_gp_sc_sg.Dump()
 	# atten_gp_sc_sg.SetValue(atten)
-	# atten_gp_sc_sg.SetValue2(atten)
+
+	print("\ntarget:", atten, "cut to 5*X =", int(atten / 5) * 5)
+	for av in range(15, atten + 1, 5):
+		atten_gp_sc_sg.SetValue(av)
+		time.sleep(10)
