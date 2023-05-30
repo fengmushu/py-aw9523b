@@ -188,12 +188,14 @@ if __name__ == '__main__':
 	argv=sys.argv[1:]
 
 	try:
-		opts, args = getopt.getopt(argv, "D:v:t")
+		opts, args = getopt.getopt(argv, "D:v:ts:i:")
 	except:
 		Usage()
 
 	atten=None
 	unit_test=None
+	intv_waitting=5
+	init_atten=20
 	for opt, arg in opts:
 		if opt in ['-D']:
 			ttyX=arg
@@ -201,16 +203,18 @@ if __name__ == '__main__':
 			atten=int(arg)
 		if opt in ['-t']:
 			unit_test = True
+		if opt in ['-i']:
+			intv_waitting = int(arg)
+		if opt in ['-s']:
+			init_atten = int(arg)
 
 	try:
 		ttyX
 	except:
 		ttyX='/dev/ttyUSB0'
 
-	sys.stdout.write("serial port: {!r}\n".format(ttyX))
-
 	Ser = SerialttyUSB(serial.Serial(), ttyX)
-	atten_sc = AttenGear("HP33321-SC", 3, [40, 20, 10])
+	atten_sc = AttenGear("HP33321-SC", 3, [20, 40, 10])
 	atten_sd = AttenGear("HP33321-SD", 3, [30, 40, 5])
 	atten_sg = AttenGear("HP33321-SG", 3, [20, 5, 10])
 
@@ -226,9 +230,11 @@ if __name__ == '__main__':
 	# atten_gp_sc_sg = AttenGroup("SC-SG", Ser, [atten_sc, atten_sg])
 	atten_gp_sc_sg = AttenGroup("SC-SG", Ser, [atten_sg, atten_sc])
 	atten_gp_sc_sg.Dump()
-	# atten_gp_sc_sg.SetValue(atten)
+	atten_gp_sc_sg.SetValue(init_atten)
+	time.sleep(10)
 
 	print("\ntarget:", atten, "cut to 5*X =", int(atten / 5) * 5)
-	for av in range(15, atten + 1, 5):
+	sys.stdout.write(" serial port: {!r}, intv: {:d} sec.\n".format(ttyX, intv_waitting))
+	for av in range(init_atten, atten + 5, 5):
 		atten_gp_sc_sg.SetValue(av)
-		time.sleep(10)
+		time.sleep(intv_waitting)
