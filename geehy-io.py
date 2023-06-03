@@ -19,7 +19,7 @@ def UnitTest(ser):
 	ser.SetFull()
 	time.sleep(3)
 	ser.SetHalt()
-	time.sleep(3)
+	time.sleep(1)
 	exit(0)
 
 def Usage():
@@ -31,7 +31,7 @@ if __name__ == '__main__':
 	argv=sys.argv[1:]
 
 	try:
-		opts, args = getopt.getopt(argv, "D:v:ts:i:")
+		opts, args = getopt.getopt(argv, "D:v:ut:s:i:")
 	except:
 		Usage()
 
@@ -39,17 +39,20 @@ if __name__ == '__main__':
 	unit_test=None
 	intv_waitting=5
 	init_atten=20
+	step_lvl=5
 	for opt, arg in opts:
 		if opt in ['-D']:
 			ttyX=arg
 		if opt in ['-v']:
 			atten=int(arg)
-		if opt in ['-t']:
+		if opt in ['-u']:
 			unit_test = True
 		if opt in ['-i']:
 			intv_waitting = int(arg)
 		if opt in ['-s']:
 			init_atten = int(arg)
+		if opt in ['-t']:
+			step_lvl = int(arg)
 
 	try:
 		ttyX
@@ -77,7 +80,7 @@ if __name__ == '__main__':
 	time.sleep(10)
 
 	print("\ntarget:", atten, "cut to 5*X =", int(atten / 5) * 5)
-	sys.stdout.write(" serial port: {!r}, intv: {:d} sec.\n".format(ttyX, intv_waitting))
-	for av in range(init_atten, atten + 5, 5):
+	sys.stdout.write(" serial port: {!r}, step:{:d} intv: {:d} sec.\n".format(ttyX, step_lvl, intv_waitting))
+	for av in range(init_atten, atten + 5, step_lvl):
 		atten_gp_sc_sg.SetValue(av)
 		time.sleep(intv_waitting)
