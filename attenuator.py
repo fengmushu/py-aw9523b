@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 #
 # This file is part of pySerial - Cross platform serial port support for Python
 # (C) 2016 Chris Liechti <cliechti@gmx.net>
@@ -38,9 +38,9 @@ class AttenUnit(object):
 		self.busy=[]
 
 	def Dump(self):
-		print(self.model, "gears:", len(self.atten_sw))
+		print("{0} gears: {1}".format(self.model, len(self.atten_sw)))
 		for gi in self.gears:
-			print('\t{:02d}'.format(gi), self.atten_sw.get(gi))
+			print('{0:2d} {1}'.format(gi, self.atten_sw.get(gi)))
 		print("")
 
 	def GetModel(self):
@@ -61,18 +61,19 @@ class AttenGroup(object):
 		self.combo={}
 
 		# init step and maps
-		print(self.serial_number, "have", len(units), "unit")
+		print("{0} have {1} units".format(self.serial_number, len(units)))
 		for au in units:
 			au.Dump()
 
 		def __gears_init(self, layers):
-			combo=0
+			cbin=0
 			for li in range(0, len(layers), 1):
-				combo += layers[li]
+				cbin += layers[li]
 
-			# print("---", combo, ":", layers)
-			# TODO: filter some combo
-			self.combo.update({combo:layers.copy()})
+			# TODO: filter some cbin
+			# print("--- {0:3d} : {1}".format(cbin, layers))
+			# self.combo.update({cbin:layers.copy()}) 	# python2.7 not supported
+			self.combo.update({cbin: layers[:]})		# use slic
 
 		layers=[]
 		self.travUnits(layers, __gears_init)
@@ -83,10 +84,10 @@ class AttenGroup(object):
 		# print(self.gears)
 		# print(self.combo)
 	def Dump(self):
-		print(" Atten group:", self.serial_number, "DUMP")
+		print("Atten group: {0} DUMP".format(self.serial_number))
 		print("------------------------------")
 		for ge in self.gears:
-			print("Gear:", ge, "\t", self.combo[ge])
+			print("Gear: {0} \t {1}".format(ge, self.combo[ge]))
 
 
 	def travUnits(self, layers, cb_func):
@@ -108,7 +109,7 @@ class AttenGroup(object):
 
 	def SetValue(self, value):
 		print("\n==============================")
-		print("-",self.serial_number, "Adjust to:", value, "db -\n")
+		print("- {0} Adjust to: ${1} db -".format(self.serial_number, value))
 		dsmu=[]
 		print("------------------------------")
 		for ge in self.gears:
@@ -117,7 +118,7 @@ class AttenGroup(object):
 					ue = self.combo[ge][ui]
 					usw = self.units[ui].GetAtten(ue)
 					dsmu.extend(usw)
-					print("", self.units[ui].GetModel(), ue, "\t", usw)
+					print("{0} {1} \t {2}".format(self.units[ui].GetModel(), ue, usw))
 				value -= ge
 				break
 		print("------------------------------")

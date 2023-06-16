@@ -7,7 +7,6 @@
 
 import sys
 import os
-import serial
 import time
 import getopt
 from hexdump import hexdump
@@ -59,7 +58,7 @@ if __name__ == '__main__':
 	except:
 		ttyX='/dev/ttyUSB0'
 
-	Ser = SerialttyUSB(serial.Serial(), ttyX)
+	Ser = SerialttyUSB(ttyX)
 	atten_sc = AttenUnit("HP33321-SC", 3, [20, 40, 10])
 	atten_sd = AttenUnit("HP33321-SD", 3, [30, 40, 5])
 	atten_sg = AttenUnit("HP33321-SG", 3, [20, 5, 10])
