@@ -84,7 +84,11 @@ class AttenGroup(object):
 		# print(self.gears)
 		# print(self.combo)
 	def Dump(self):
-		print("Atten group: {0} DUMP".format(self.serial_number))
+		print("\nAtten units:")
+		print("------------------------------")
+		for gu in self.units:
+			gu.Dump()
+		print("\nAtten group: {0} DUMP".format(self.serial_number))
 		print("------------------------------")
 		for ge in self.gears:
 			print("Gear: {0} \t {1}".format(ge, self.combo[ge]))
