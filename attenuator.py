@@ -4,6 +4,8 @@
 # (C) 2016 Chris Liechti <cliechti@gmx.net>
 #
 # SPDX-License-Identifier:	BSD-3-Clause
+import time
+import serial
 
 class AttenUnit(object):
 	def __init__(self, model, switchs, values):
@@ -130,3 +132,69 @@ class AttenGroup(object):
 		print("There's", value, "db loss")
 		self.serial.WriteIO(dsmu)
 		return value
+
+# "INFO", "STATUS", "SET", "SAA", "RAMP", "DEFAULT_ATTEN"
+class AttenAdaura(object):
+	def __init__(self, model, ttyX):
+		self.model = model
+		Ser = serial.Serial()
+		Ser.port=ttyX
+		Ser.baudrate=115200
+		Ser.xonxoff=0
+		Ser.rtscts=0
+		Ser.parity='N'
+		Ser.bytesize=8
+		Ser.timeout = 1
+		# 04d8:f494 Microchip Technology, Inc. Adaura Technologies LLC.
+		try:
+			Ser.port
+		except:
+			Ser.port = "/dev/ttyACM0"
+		self.Ser = Ser
+
+	def send_command(self, cmd):
+		self.Ser.open()
+		self.Ser.write(cmd.encode('utf-8'))
+		while True:
+			rst = self.Ser.readline()
+			if rst:
+				rst = rst.replace(b'\n', b'').replace(b'\r', b'')
+				print(rst)
+			else:
+				break
+		self.Ser.close()
+		return rst
+
+	def Dump(self):
+		print("{0} info:".format(self.model))
+		self.send_command("INFO")
+
+	def GetModel(self):
+		return self.model
+
+	def GetStatus(self):
+		return self.send_command("STATUS")
+
+	# chain: 1, 2, 3, 4
+	# value: 0-63
+	def SetValue(self, chain, value):
+		if chain in [1, 2, 3, 4]:
+			print("set chain {0} to {1} db".format(chain, value))
+			self.send_command("SET {} {}".format(chain, value))
+		else:
+			print("error: chain must 1-4")
+		
+	def SetValueAll(self, value):
+		print("set all to {} db".format(value))
+		self.send_command("SAA {}".format(value))
+
+	def SetDefaultValue(self, value):
+		print("set all {} as power on".format(value))
+		self.send_command("DEFAULT_ATTEN {}".format(value))
+
+	# specified attenuator channels in predefined directions
+	# chains: "A A E D"; 	--- A: Ascend, D: Descend, E: exclude
+	# todo: [A|B|S|D];	--- A: start, B: stop, S: step, D: delay ms
+	def SetRAMP(self, chains, start, end, step, delayms):
+		print("RAMP [{0}] from {1} to {2} step {3} delay {4} ms".format(chains, start, end, step, delayms))
+		self.send_command("RAMP {0} {1} {2} {3} {4}".format(chains, start, end, step, delayms))
