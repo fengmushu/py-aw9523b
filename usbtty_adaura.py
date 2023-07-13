@@ -12,7 +12,7 @@ import getopt
 from hexdump import hexdump
 from attenuator import AttenAdaura #AttenUnit, AttenGroup
 
-def UnitTest(ser):
+def UnitTest(adaura):
 	print("Self unit test action...")
 	exit(0)
 
@@ -65,7 +65,7 @@ if __name__ == '__main__':
 	adaura = AttenAdaura("ADAURA-63", ttyX)
 
 	if unit_test == True:
-		UnitTest(Ser)
+		UnitTest(adaura)
 
 	adaura.Dump()
 

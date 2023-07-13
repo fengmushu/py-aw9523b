@@ -11,7 +11,7 @@ import time
 import getopt
 from hexdump import hexdump
 from attenuator import AttenUnit, AttenGroup
-from usbtty import SerialttyUSB
+from usbtty_geehy import SerialttyUSB
 
 def UnitTest(ser):
 	print("Self unit test action...")
