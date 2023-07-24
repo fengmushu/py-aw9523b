@@ -8,26 +8,49 @@
 import sys
 import os
 import time
+import serial
 import getopt
 from hexdump import hexdump
-from attenuator import AttenAdaura #AttenUnit, AttenGroup
+from attenuator import AttenAdaura
 
-def UnitTest(adaura):
-	print("Self unit test action...")
-	exit(0)
+class ttyUsbAdaura(object):
+	def __init__(self, ttyX):
+		self.serial = serial.Serial()
+		self.serial.baudrate=115200
+		if ttyX == None:
+			ttyX=self.FindttyUSBx()
+			print("Found %s" % (ttyX))
+			if ttyX == None:
+				raise Exception("Not an adaura")
+		else:
+			print("Use {}".format(ttyX))
+
+		self.serial.port=ttyX
+		self.serial.xonxoff=0
+		self.serial.rtscts=0
+		self.serial.parity='N'
+		self.serial.bytesize=8
+		# self.serial.open()
+		# self.serial.write(DATA_halt)
+		# self.serial.close()
+
+	def FindttyUSBx(self):
+		ttyX = os.popen('ls /sys/class/tty/ | grep ttyACM', 'r')
+		lines = ttyX.read()
+		ttyX.close()
+		for line in lines.splitlines(False):
+			# print(line)
+			return "/dev/" + line
+		return None
+
+	def UnitTest(adaura):
+		print("Self unit test action...")
+		exit(0)
 
 def Usage():
 	print("For example:")
-	print("\t./geehy-io.py -D </dev/ttyUSB0> -v 103")
+	print("\t./usbtty_adaura.py -D </dev/ttyUSB0> -v 103")
 	exit(-1)
-
-def FindttyUSBx():
-	ttyX = os.popen('ls /sys/class/tty/ | grep ttyACM', 'r')
-	lines = ttyX.read()
-	ttyX.close()
-	for line in lines.splitlines(False):
-		# print(line)
-		return "/dev/" + line
 
 
 if __name__ == '__main__':
@@ -58,11 +81,12 @@ if __name__ == '__main__':
 			step_lvl = int(arg)
 
 	try:
-		ttyX
+		serial = ttyUsbAdaura(None)
 	except:
-		ttyX=FindttyUSBx()
+		exit(-1)
 
-	adaura = AttenAdaura("ADAURA-63", ttyX)
+	print(serial)
+	adaura = AttenAdaura("ADAURA-63", serial)
 
 	if unit_test == True:
 		UnitTest(adaura)

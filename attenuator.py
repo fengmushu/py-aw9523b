@@ -6,6 +6,7 @@
 # SPDX-License-Identifier:	BSD-3-Clause
 import time
 import serial
+from print_color import print
 
 class AttenUnit(object):
 	def __init__(self, model, switchs, values):
@@ -115,7 +116,7 @@ class AttenGroup(object):
 
 	def SetValue(self, value):
 		print("\n==============================")
-		print("- {0} Adjust to: ${1} db -".format(self.serial_number, value))
+		print("- {0} Adjust to: ${1} db -".format(self.serial_number, value), color='green', format='bold')
 		dsmu=[]
 		print("------------------------------")
 		for ge in self.gears:
@@ -135,21 +136,9 @@ class AttenGroup(object):
 
 # "INFO", "STATUS", "SET", "SAA", "RAMP", "DEFAULT_ATTEN"
 class AttenAdaura(object):
-	def __init__(self, model, ttyX):
+	def __init__(self, model, Ser):
 		self.model = model
-		Ser = serial.Serial()
-		Ser.port=ttyX
-		Ser.baudrate=115200
-		Ser.xonxoff=0
-		Ser.rtscts=0
-		Ser.parity='N'
-		Ser.bytesize=8
-		Ser.timeout = 1
-		# 04d8:f494 Microchip Technology, Inc. Adaura Technologies LLC.
-		try:
-			Ser.port
-		except:
-			Ser.port = "/dev/ttyACM0"
+		# Ser = serial.Serial()
 		self.Ser = Ser
 
 	def send_command(self, cmd):
