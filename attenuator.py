@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # This file is part of pySerial - Cross platform serial port support for Python
 # (C) 2016 Chris Liechti <cliechti@gmx.net>
@@ -134,29 +134,51 @@ class AttenGroup(object):
 		self.serial.WriteIO(dsmu)
 		return value
 
-# "INFO", "STATUS", "SET", "SAA", "RAMP", "DEFAULT_ATTEN"
 class AttenAdaura(object):
-	def __init__(self, model, Ser):
+	def __init__(self, model, ttyX):
 		self.model = model
-		# Ser = serial.Serial()
-		self.Ser = Ser
+		self.serial = serial.Serial()
+		if ttyX == None:
+			self.serial.port = self.FindttyUSBx()
+		self.serial.baudrate=115200
+		self.serial.xonxoff=0
+		self.serial.rtscts=0
+		self.serial.parity='N'
+		self.serial.bytesize=8
+		self.serial.timeout=1
 
+	def FindttyUSBx(self):
+		import os
+		ttyX = os.popen('ls /sys/class/tty/ | grep ttyACM', 'r')
+		lines = ttyX.read()
+		ttyX.close()
+		for line in lines.splitlines(False):
+			# print(line)
+			return "/dev/" + line
+		return None
+
+	# "INFO", "STATUS", "SET", "SAA", "RAMP", "DEFAULT_ATTEN"
 	def send_command(self, cmd):
-		self.Ser.open()
-		self.Ser.write(cmd.encode('utf-8'))
+		self.serial.open()
+		cmd_code = cmd.encode('utf-8')
+		print(cmd_code, color='red')
+		self.serial.write(cmd_code)
 		while True:
-			rst = self.Ser.readline()
+			self.serial.flush()
+			rst = self.serial.readline()
 			if rst:
 				rst = rst.replace(b'\n', b'').replace(b'\r', b'')
 				print(rst)
 			else:
+				print("---+---")
 				break
-		self.Ser.close()
+		self.serial.close()
 		return rst
 
 	def Dump(self):
 		print("{0} info:".format(self.model))
 		self.send_command("INFO")
+		self.GetStatus()
 
 	def GetModel(self):
 		return self.model
@@ -172,8 +194,8 @@ class AttenAdaura(object):
 			self.send_command("SET {} {}".format(chain, value))
 		else:
 			print("error: chain must 1-4")
-		
-	def SetValueAll(self, value):
+
+	def SetGroupValue(self, value):
 		print("set all to {} db".format(value))
 		self.send_command("SAA {}".format(value))
 

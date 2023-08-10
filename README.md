@@ -1,2 +1,1 @@
-pip install simple-hexdump
-pip install pyserial
+pip install simple-hexdump pyserial xlsxwriter print_color

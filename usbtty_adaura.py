@@ -12,90 +12,85 @@ import serial
 import getopt
 from hexdump import hexdump
 from attenuator import AttenAdaura
-
-class ttyUsbAdaura(object):
-	def __init__(self, ttyX):
-		self.serial = serial.Serial()
-		self.serial.baudrate=115200
-		if ttyX == None:
-			ttyX=self.FindttyUSBx()
-			print("Found %s" % (ttyX))
-			if ttyX == None:
-				raise Exception("Not an adaura")
-		else:
-			print("Use {}".format(ttyX))
-
-		self.serial.port=ttyX
-		self.serial.xonxoff=0
-		self.serial.rtscts=0
-		self.serial.parity='N'
-		self.serial.bytesize=8
-		# self.serial.open()
-		# self.serial.write(DATA_halt)
-		# self.serial.close()
-
-	def FindttyUSBx(self):
-		ttyX = os.popen('ls /sys/class/tty/ | grep ttyACM', 'r')
-		lines = ttyX.read()
-		ttyX.close()
-		for line in lines.splitlines(False):
-			# print(line)
-			return "/dev/" + line
-		return None
-
-	def UnitTest(adaura):
-		print("Self unit test action...")
-		exit(0)
+from print_color import print
 
 def Usage():
 	print("For example:")
-	print("\t./usbtty_adaura.py -D </dev/ttyUSB0> -v 103")
+	print("\t./usbtty_adaura.py -D </dev/ttyUSB-X> -v 103")
+	print("\t	-v <value>, set all channel to value")
+	print("\t	-d <value>, power on default value")
+	print("\t	-c <1, 2, 3, 4>, channel to set")
+	print("\t	-s <start> -e <stop> -i <step> -w <delay seconds>")
+	print("\t	-u unit test")
 	exit(-1)
-
 
 if __name__ == '__main__':
 	argv=sys.argv[1:]
 
 	try:
-		opts, args = getopt.getopt(argv, "D:v:ut:s:i:")
+		opts, args = getopt.getopt(argv, "D:us:e:i:w:d:v:c:")
 	except:
 		Usage()
 
-	atten=None
 	unit_test=None
-	intv_waitting=5
-	init_atten=20
-	step_lvl=5
+	intv_waitting=2000
+	start_value=None
+	stop_value=63
+	step_value=1
+	set_value=None
+	default_value=None
+	channel=None
 	for opt, arg in opts:
 		if opt in ['-D']:
 			ttyX=arg
-		if opt in ['-v']:
-			atten=int(arg)
 		if opt in ['-u']:
 			unit_test = True
-		if opt in ['-i']:
-			intv_waitting = int(arg)
 		if opt in ['-s']:
-			init_atten = int(arg)
-		if opt in ['-t']:
-			step_lvl = int(arg)
+			start_value = int(arg)
+		if opt in ['-e']:
+			stop_value = int(arg)
+		if opt in ['-i']:
+			step_value = int(arg)
+		if opt in ['-w']:
+			intv_waitting = int(arg) * 1000
+		if opt in ['-d']:
+			default_value = int(arg)
+		if opt in ['-v']:
+			set_value = int(arg)
+		if opt in ['-c']:
+			channel = int(arg)
 
 	try:
-		serial = ttyUsbAdaura(None)
-	except:
+		adaura = AttenAdaura("ADAURA-63", None)
+	except Exception as e:
+		print(e)
 		exit(-1)
 
-	print(serial)
-	adaura = AttenAdaura("ADAURA-63", serial)
+	# if unit_test == True:
+	# 	UnitTest(adaura)
 
-	if unit_test == True:
-		UnitTest(adaura)
+	# adaura.Dump()
+	if set_value != None:
+		adaura.SetGroupValue(set_value)
 
-	adaura.Dump()
+	if start_value != None:
+		# init
+		adaura.SetGroupValue(start_value)
+		# A: Ascend
+		# E: Exclud
+		# D: Descend
+		# Start, Stop, Step, Delay
+		# !!! BUG: RAMP is not supported ...
+		# adaura.SetRAMP('D D A A', start_value, stop_value, step_value, intv_waitting)
 
-	adaura.SetRAMP('A A E D', 10, 63, 1, 500)
+		for val in range(start_value, stop_value, step_value):
+			if channel != None:
+				adaura.SetValue(channel, val)
+			else:
+				adaura.SetGroupValue(val)
+			time.sleep(intv_waitting/1000)
 
-	# for v in range(1, 63, 1):
-	# 	adaura.SetValueAll(v)
-	# 	adaura.GetStatus()
-	# 	time.sleep(1)
+	if default_value != None:
+		adaura.SetDefaultValue(default_value)
+
+	adaura.GetStatus()

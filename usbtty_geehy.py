@@ -57,13 +57,15 @@ class ttyUsbGeehy(object):
 	
 	def FindttyUSBx(self):
 		ch341_dir='/sys/bus/usb-serial/drivers/ch341-uart/'
-		ttyX = os.popen('[ -d {}  ] && ls {} | grep ttyUSB', 'r'.format(ch341_dir, ch341_dir))
+		ttyX = os.popen("[ -d {}  ] && ls {} | grep ttyUSB".format(ch341_dir, ch341_dir), 'r')
 		lines = ttyX.read()
 		ttyX.close()
-		for line in lines.splitlines(False):
+		lines = lines.splitlines(False)
+		if len(lines) <= 0:
+			raise Exception("ttyUSB not found yet")
+		for line in lines:
 			# print(line)
 			return "/dev/" + line
-		raise Exception("ttyUSB not found")
 	
 	def WriteIO(self, ds):
 		io_w = [0x3b,]
@@ -103,17 +105,17 @@ class ttyDioRotary(ttyUsbGeehy):
 	def __init__(self, ttyX):
 		super(ttyDioRotary, self).__init__(ttyX)
 
-	def value2mask(self, value):
-		ds = [0, 0, 0, 0, 0, 0]
+	def __value2mask(self, value):
+		ds = [0, 0, 0, 0, 0, 0, 0, 0]
 		for idx in range(len(ds)-1, -1, -1):
 			ds[idx] = (1 - (value % 2))
 			value = int(value/2)
 		ds.reverse()
 		return ds
 
-	def setValue(self, value):
+	def SetValue(self, value):
 		print("set io to {}".format(value))
-		ds = self.value2mask(value)
+		ds = self.__value2mask(value)
 		# print(ds)
 		self.serial.open()
 
@@ -128,10 +130,10 @@ class ttyDioRotary(ttyUsbGeehy):
 		self.WriteIoRaw(ds_start, 0.1)
 		self.serial.close()
 
-	def setOriginal(self):
+	def SetOriginal(self):
 		print("set rotary original pos")
 		self.serial.open()
-		ds = self.value2mask(0)
+		ds = self.__value2mask(0)
 		ds_orig = ds.copy()
 		ds_orig.extend(ds_subfix_init)
 		self.WriteIoRaw(ds_orig, 0.1)
@@ -140,7 +142,7 @@ class ttyDioRotary(ttyUsbGeehy):
 
 	def SetIdle(self):
 		self.serial.open()
-		ds = self.value2mask(0)
+		ds = self.__value2mask(0)
 
 		ds_lock = ds.copy()
 		ds_lock.extend(ds_subfix_stop)
@@ -189,15 +191,16 @@ if __name__ == '__main__':
 
 	try:
 		Rot = ttyDioRotary(ttyX)
-	except:
+	except Exception as e:
+		print(e)
 		exit(-1)
 
 	if reset == True:
-		Rot.setOriginal()
+		Rot.SetOriginal()
 	elif sleep == True:
-		Rot.setIdle()
+		Rot.SetIdle()
 	elif value in range(0, 15, 1):
-		Rot.setValue(value)
+		Rot.SetValue(value)
 	else:
 		Usage()
 
