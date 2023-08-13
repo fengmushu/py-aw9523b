@@ -10,6 +10,7 @@ import time
 import os
 import serial
 import getopt
+from hexdump import hexdump
 
 DATA_ioset=[0x3a, 0x1, 0x0, 0xA]
 DATA_delay=[0x3c, 0x05, 1, 0x0, 0x64]
@@ -34,6 +35,8 @@ DATA_min.extend(ds_min)
 DATA_halt.extend(ds_halt)
 DATA_oops.extend(ds_oops)
 
+POINTS_TO_ANGLES=[5, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 355]
+
 class ttyUsbGeehy(object):
 	def __init__(self, ttyX):
 		self.serial = serial.Serial()
@@ -51,6 +54,7 @@ class ttyUsbGeehy(object):
 		self.serial.rtscts=0
 		self.serial.parity='N'
 		self.serial.bytesize=8
+		self.serial.timeout = 3
 		# self.serial.open()
 		# self.serial.write(DATA_halt)
 		# self.serial.close()
@@ -78,12 +82,27 @@ class ttyUsbGeehy(object):
 		time.sleep(0.1)
 		self.serial.close()
 
+	def ReadIoRaw(self, channels):
+		rx_o = []
+		for ch in channels:
+			io_r = [0x3f, ch]
+			# print(io_r)
+			self.serial.write(io_r)
+			self.serial.flush()
+			rx = self.serial.read(size=3)
+			rx_o.append(rx)
+			# time.sleep(1)
+		print(rx_o)
+		return rx_o
+
 	def WriteIoRaw(self, ds, delay):
-		io_w = [0x3b]
+		io_w = [0x3b,]
 		io_w.extend(ds)
 		print("serial io:", io_w)
 		self.serial.write(io_w)
 		self.serial.flush()
+		# while True:
+
 		print("wait... {} sec".format(delay))
 		time.sleep(delay)
 
@@ -113,17 +132,27 @@ class ttyDioRotary(ttyUsbGeehy):
 		ds.reverse()
 		return ds
 
+	def __point_to_angle(self, point):
+		return POINTS_TO_ANGLES[point]
+
+	def __angle_to_point(self, angle):
+		return int(angle / 30)
+
+	def GetAngle(self, point):
+		return self.__point_to_angle(point)
+
+	def GetPoint(self, angle):
+		return self.__angle_to_point(angle)
+
 	def SetValue(self, value):
 		print("set io to {}".format(value))
 		ds = self.__value2mask(value)
 		# print(ds)
 		self.serial.open()
-
 		# stop prev distnation
 		ds_lock = ds.copy()
 		ds_lock.extend(ds_subfix_stop)
 		self.WriteIoRaw(ds_lock, 0.1)
-
 		# to target pos
 		ds_start = ds.copy()
 		ds_start.extend(ds_subfix_start)
@@ -143,16 +172,28 @@ class ttyDioRotary(ttyUsbGeehy):
 	def SetIdle(self):
 		self.serial.open()
 		ds = self.__value2mask(0)
-
 		ds_lock = ds.copy()
 		ds_lock.extend(ds_subfix_stop)
 		self.WriteIoRaw(ds_lock, 1)
-
 		ds_lock = ds.copy()
 		ds_lock.extend(ds_subfix_idle)
 		self.WriteIoRaw(ds_lock, 0.1)
-
 		self.serial.close()
+
+	def UnitTest(self):
+		self.SetOriginal()
+		time.sleep(3)
+		for point in range(0, 11, 1):
+			self.SetValue(point)
+			time.sleep(3)
+		self.SetOriginal()
+		time.sleep(3)
+
+		# self.serial.open()
+		# self.ReadIoRaw([1, 2, 3, 4, 13, 14, 15, 16])
+		# self.serial.close()
+
+		self.SetIdle()
 
 def Usage():
 	print("USAGE:")
@@ -173,9 +214,10 @@ if __name__ == '__main__':
 	sleep = False
 	argv = sys.argv[1:]
 	ttyX = None
+	unit_test = None
 	# print(argv)
 	try:
-		opts, args = getopt.getopt(argv, "D:v:rs")
+		opts, args = getopt.getopt(argv, "D:v:rsu")
 		for opt, arg in opts:
 			if opt in ['-v']:	
 				value = int(arg)
@@ -185,6 +227,8 @@ if __name__ == '__main__':
 				sleep = True
 			if opt in ['-D']:
 				ttyX = arg
+			if opt in ['-u']:
+				unit_test = True
 	except:
 		Usage()
 		exit(-1)
@@ -194,6 +238,9 @@ if __name__ == '__main__':
 	except Exception as e:
 		print(e)
 		exit(-1)
+
+	if unit_test:
+		Rot.UnitTest()
 
 	if reset == True:
 		Rot.SetOriginal()
