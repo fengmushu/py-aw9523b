@@ -170,7 +170,7 @@ class AttenAdaura(object):
 				rst = rst.replace(b'\n', b'').replace(b'\r', b'')
 				print(rst)
 			else:
-				print("---+---")
+				print("----------------------------------------")
 				break
 		self.serial.close()
 		return rst

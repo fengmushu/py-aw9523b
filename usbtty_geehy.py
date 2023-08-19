@@ -35,7 +35,7 @@ DATA_min.extend(ds_min)
 DATA_halt.extend(ds_halt)
 DATA_oops.extend(ds_oops)
 
-POINTS_TO_ANGLES=[5, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 355]
+POINTS_TO_ANGLES=[1, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 350]
 
 class ttyUsbGeehy(object):
 	def __init__(self, ttyX):
@@ -149,14 +149,15 @@ class ttyDioRotary(ttyUsbGeehy):
 		ds = self.__value2mask(value)
 		# print(ds)
 		self.serial.open()
-		# stop prev distnation
-		ds_lock = ds.copy()
-		ds_lock.extend(ds_subfix_stop)
-		self.WriteIoRaw(ds_lock, 0.1)
 		# to target pos
 		ds_start = ds.copy()
 		ds_start.extend(ds_subfix_start)
 		self.WriteIoRaw(ds_start, 0.1)
+		# TODO: wait ready()
+		# stop prev distnation
+		ds_pause = ds.copy()
+		ds_pause.extend(ds_subfix_idle)
+		self.WriteIoRaw(ds_pause, 0.1)
 		self.serial.close()
 
 	def SetOriginal(self):
@@ -166,15 +167,15 @@ class ttyDioRotary(ttyUsbGeehy):
 		ds_orig = ds.copy()
 		ds_orig.extend(ds_subfix_init)
 		self.WriteIoRaw(ds_orig, 0.1)
-		self.serial.close()
 		time.sleep(3)
+		ds_pause = ds.copy()
+		ds_pause.extend(ds_subfix_idle)
+		self.WriteIoRaw(ds_pause, 0.1)
+		self.serial.close()
 
 	def SetIdle(self):
 		self.serial.open()
 		ds = self.__value2mask(0)
-		ds_lock = ds.copy()
-		ds_lock.extend(ds_subfix_stop)
-		self.WriteIoRaw(ds_lock, 1)
 		ds_lock = ds.copy()
 		ds_lock.extend(ds_subfix_idle)
 		self.WriteIoRaw(ds_lock, 0.1)
