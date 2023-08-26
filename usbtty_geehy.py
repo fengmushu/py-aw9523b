@@ -77,9 +77,9 @@ class ttyUsbGeehy(object):
 		print("serial io:", io_w)
 		self.serial.open()
 		self.serial.write(io_w)
-		time.sleep(0.1)
+		self.serial.flush()
 		self.serial.write(DATA_halt)
-		time.sleep(0.1)
+		self.serial.flush()
 		self.serial.close()
 
 	def ReadIoRaw(self, channels):
@@ -102,22 +102,22 @@ class ttyUsbGeehy(object):
 		self.serial.write(io_w)
 		self.serial.flush()
 		# while True:
-
-		print("wait... {} sec".format(delay))
+		# 	TODO: ...
+		# print("wait... {} sec".format(delay))
 		time.sleep(delay)
 
 	def SetHalt(self):
 		print("set io halt...")
 		self.serial.open()
 		self.serial.write(DATA_halt)
-		time.sleep(0.1)
+		self.serial.flush()
 		self.serial.close()
 
 	def SetFull(self):
 		print("set io oops...")
 		self.serial.open()
 		self.serial.write(DATA_oops)
-		time.sleep(0.1)
+		self.serial.flush()
 		self.serial.close()
 
 class ttyDioRotary(ttyUsbGeehy):
@@ -167,7 +167,7 @@ class ttyDioRotary(ttyUsbGeehy):
 		ds_orig = ds.copy()
 		ds_orig.extend(ds_subfix_init)
 		self.WriteIoRaw(ds_orig, 0.1)
-		time.sleep(3)
+		time.sleep(5)
 		ds_pause = ds.copy()
 		ds_pause.extend(ds_subfix_idle)
 		self.WriteIoRaw(ds_pause, 0.1)

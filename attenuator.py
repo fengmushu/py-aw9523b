@@ -63,10 +63,10 @@ class AttenGroup(object):
 		self.gears=[]
 		self.combo={}
 
-		# init step and maps
-		print("{0} have {1} units".format(self.serial_number, len(units)))
-		for au in units:
-			au.Dump()
+		# DEBUG: init step and maps
+		# print("{0} have {1} units".format(self.serial_number, len(units)))
+		# for au in units:
+		# 	au.Dump()
 
 		def __gears_init(self, layers):
 			cbin=0
