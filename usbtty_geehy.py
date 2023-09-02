@@ -37,12 +37,12 @@ DATA_oops.extend(ds_oops)
 
 POINTS_TO_ANGLES=[1, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 350]
 
-class ttyUsbGeehy(object):
+class tty_usb_geehy(object):
 	def __init__(self, ttyX):
 		self.serial = serial.Serial()
 		self.serial.baudrate=115200
 		if ttyX == None:
-			ttyX=self.FindttyUSBx()
+			ttyX=self.find_tty_usb()
 			print("Found %s" % (ttyX))
 			if ttyX == None:
 				raise Exception("ttyUSB not Found")
@@ -59,7 +59,7 @@ class ttyUsbGeehy(object):
 		# self.serial.write(DATA_halt)
 		# self.serial.close()
 	
-	def FindttyUSBx(self):
+	def find_tty_usb(self):
 		ch341_dir='/sys/bus/usb-serial/drivers/ch341-uart/'
 		ttyX = os.popen("[ -d {}  ] && ls {} | grep ttyUSB".format(ch341_dir, ch341_dir), 'r')
 		lines = ttyX.read()
@@ -95,7 +95,7 @@ class ttyUsbGeehy(object):
 		print(rx_o)
 		return rx_o
 
-	def WriteIoRaw(self, ds, delay):
+	def write_io_raw(self, ds, delay):
 		io_w = [0x3b,]
 		io_w.extend(ds)
 		print("serial io:", io_w)
@@ -120,9 +120,9 @@ class ttyUsbGeehy(object):
 		self.serial.flush()
 		self.serial.close()
 
-class ttyDioRotary(ttyUsbGeehy):
+class tty_dio_rotray(tty_usb_geehy):
 	def __init__(self, ttyX):
-		super(ttyDioRotary, self).__init__(ttyX)
+		super(tty_dio_rotray, self).__init__(ttyX)
 
 	def __value2mask(self, value):
 		ds = [0, 0, 0, 0, 0, 0, 0, 0]
@@ -138,65 +138,65 @@ class ttyDioRotary(ttyUsbGeehy):
 	def __angle_to_point(self, angle):
 		return int(angle / 30)
 
-	def GetAngle(self, point):
+	def get_angle(self, point):
 		return self.__point_to_angle(point)
 
-	def GetPoint(self, angle):
+	def get_point(self, angle):
 		return self.__angle_to_point(angle)
 
-	def SetValue(self, value):
-		print("set io to {}".format(value))
+	def set_value(self, value):
+		print("\tio {}".format(value))
 		ds = self.__value2mask(value)
 		# print(ds)
 		self.serial.open()
 		# to target pos
 		ds_start = ds.copy()
 		ds_start.extend(ds_subfix_start)
-		self.WriteIoRaw(ds_start, 0.1)
+		self.write_io_raw(ds_start, 0.1)
 		# TODO: wait ready()
 		# stop prev distnation
 		ds_pause = ds.copy()
 		ds_pause.extend(ds_subfix_idle)
-		self.WriteIoRaw(ds_pause, 0.1)
+		self.write_io_raw(ds_pause, 0.1)
 		self.serial.close()
 
-	def SetOriginal(self):
-		print("set rotary original pos")
+	def set_original(self):
+		print("Rotary original pos")
 		self.serial.open()
 		ds = self.__value2mask(0)
 		ds_orig = ds.copy()
 		ds_orig.extend(ds_subfix_init)
-		self.WriteIoRaw(ds_orig, 0.1)
+		self.write_io_raw(ds_orig, 0.1)
 		time.sleep(5)
 		ds_pause = ds.copy()
 		ds_pause.extend(ds_subfix_idle)
-		self.WriteIoRaw(ds_pause, 0.1)
+		self.write_io_raw(ds_pause, 0.1)
 		self.serial.close()
 
-	def SetIdle(self):
+	def set_idle(self):
 		self.serial.open()
 		ds = self.__value2mask(0)
 		ds_lock = ds.copy()
 		ds_lock.extend(ds_subfix_idle)
-		self.WriteIoRaw(ds_lock, 0.1)
+		self.write_io_raw(ds_lock, 0.1)
 		self.serial.close()
 
-	def UnitTest(self):
-		self.SetOriginal()
+	def unit_test(self):
+		self.set_original()
 		time.sleep(3)
 		for point in range(0, 11, 1):
-			self.SetValue(point)
+			self.set_value(point)
 			time.sleep(3)
-		self.SetOriginal()
+		self.set_original()
 		time.sleep(3)
 
 		# self.serial.open()
 		# self.ReadIoRaw([1, 2, 3, 4, 13, 14, 15, 16])
 		# self.serial.close()
 
-		self.SetIdle()
+		self.set_idle()
 
-def Usage():
+def usage():
 	print("USAGE:")
 	print("    usbtty_geehy")
 	print("\t-v [value], jump to pre-program position [0-12,13,14]")
@@ -208,7 +208,7 @@ def Usage():
 
 # unit test
 if __name__ == '__main__':
-	# Ser.FindttyUSBx()
+	# Ser.find_tty_usb()
 
 	value = -1
 	reset = False
@@ -231,25 +231,25 @@ if __name__ == '__main__':
 			if opt in ['-u']:
 				unit_test = True
 	except:
-		Usage()
+		usage()
 		exit(-1)
 
 	try:
-		Rot = ttyDioRotary(ttyX)
+		Rot = tty_dio_rotray(ttyX)
 	except Exception as e:
 		print(e)
 		exit(-1)
 
 	if unit_test:
-		Rot.UnitTest()
+		Rot.unit_test()
 
 	if reset == True:
-		Rot.SetOriginal()
+		Rot.set_original()
 	elif sleep == True:
-		Rot.SetIdle()
+		Rot.set_idle()
 	elif value in range(0, 15, 1):
-		Rot.SetValue(value)
+		Rot.set_value(value)
 	else:
-		Usage()
+		usage()
 
 	

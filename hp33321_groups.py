@@ -10,8 +10,8 @@ import os
 import time
 import getopt
 from hexdump import hexdump
-from attenuator import AttenUnit, AttenGroup
-from usbtty_geehy import ttyUsbGeehy
+from attenuator import atten_unit, atten_group
+from usbtty_geehy import tty_usb_geehy
 from print_color import print
 
 def UnitTest(ser):
@@ -22,7 +22,7 @@ def UnitTest(ser):
 	time.sleep(1)
 	exit(0)
 
-def Usage():
+def usage():
 	print("For example:")
 	print("\t./geehy-io.py -D </dev/ttyUSB0> -v 103")
 	exit(-1)
@@ -33,7 +33,7 @@ if __name__ == '__main__':
 	try:
 		opts, args = getopt.getopt(argv, "D:v:ut:s:i:w:")
 	except:
-		Usage()
+		usage()
 
 	atten=None
 	unit_test=None
@@ -62,28 +62,28 @@ if __name__ == '__main__':
 	except:
 		ttyX='/dev/ttyUSB0'
 
-	Ser = ttyUsbGeehy(ttyX)
-	atten_sc = AttenUnit("HP33321-SC", 3, [20, 40, 10])
-	atten_sd = AttenUnit("HP33321-SD", 3, [30, 40, 5])
-	atten_sg = AttenUnit("HP33321-SG", 3, [20, 5, 10])
+	Ser = tty_usb_geehy(ttyX)
+	atten_sc = atten_unit("HP33321-SC", 3, [20, 40, 10])
+	atten_sd = atten_unit("HP33321-SD", 3, [30, 40, 5])
+	atten_sg = atten_unit("HP33321-SG", 3, [20, 5, 10])
 
 	if unit_test == True:
 		UnitTest(Ser)
 
 	if atten == None:
-		Usage()
+		usage()
 	# atten_gp_sc_sg_sd = AttenGroup("SC-SG-SD", Ser, [atten_sc, atten_sg, atten_sd])
-	# atten_gp_sc_sg_sd.Dump()
-	# atten_gp_sc_sg_sd.SetValue(atten)
+	# atten_gp_sc_sg_sd.dump()
+	# atten_gp_sc_sg_sd.set_value(atten)
 
 	# atten_gp_sc_sg = AttenGroup("SC-SG", Ser, [atten_sc, atten_sg])
-	atten_gp_sc_sg = AttenGroup("SC-SG", Ser, [atten_sg, atten_sc])
-	atten_gp_sc_sg.Dump()
-	atten_gp_sc_sg.SetValue(init_atten)
+	atten_gp_sc_sg = atten_group("SC-SG", Ser, [atten_sg, atten_sc])
+	atten_gp_sc_sg.dump()
+	atten_gp_sc_sg.set_value(init_atten)
 	time.sleep(start_wait)
 
 	print("\nTarget: {} cell to 5 * {} = {}".format(atten, int(atten/5), int(atten/5)*5), color = "yellow", background='gray', format='bold')
 	sys.stdout.write(" serial port: {!r}, step:{:d} intv: {:d} sec.\n".format(ttyX, step_lvl, intv_waitting))
 	for av in range(init_atten, atten + 5, step_lvl):
-		atten_gp_sc_sg.SetValue(av)
+		atten_gp_sc_sg.set_value(av)
 		time.sleep(intv_waitting)

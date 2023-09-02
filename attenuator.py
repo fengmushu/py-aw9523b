@@ -8,7 +8,7 @@ import time
 import serial
 from print_color import print
 
-class AttenUnit(object):
+class atten_unit(object):
 	def __init__(self, model, switchs, values):
 		gears=[]
 		atten_sw={0:0,}
@@ -40,13 +40,13 @@ class AttenUnit(object):
 		self.atten_sw=atten_sw
 		self.busy=[]
 
-	def Dump(self):
+	def dump(self):
 		print("{0} gears: {1}".format(self.model, len(self.atten_sw)))
 		for gi in self.gears:
 			print('{0:2d} {1}'.format(gi, self.atten_sw.get(gi)))
 		print("")
 
-	def GetModel(self):
+	def get_model(self):
 		return self.model
 
 	def GetGeers(self):
@@ -55,7 +55,7 @@ class AttenUnit(object):
 	def GetAtten(self, gi):
 		return self.atten_sw.get(gi)
 
-class AttenGroup(object):
+class atten_group(object):
 	def __init__(self, serial_number, serial, units):
 		self.serial_number=serial_number
 		self.units=units
@@ -66,7 +66,7 @@ class AttenGroup(object):
 		# DEBUG: init step and maps
 		# print("{0} have {1} units".format(self.serial_number, len(units)))
 		# for au in units:
-		# 	au.Dump()
+		# 	au.dump()
 
 		def __gears_init(self, layers):
 			cbin=0
@@ -86,11 +86,11 @@ class AttenGroup(object):
 
 		# print(self.gears)
 		# print(self.combo)
-	def Dump(self):
+	def dump(self):
 		print("\nAtten units:")
 		print("------------------------------")
 		for gu in self.units:
-			gu.Dump()
+			gu.dump()
 		print("\nAtten group: {0} DUMP".format(self.serial_number))
 		print("------------------------------")
 		for ge in self.gears:
@@ -114,7 +114,7 @@ class AttenGroup(object):
 			layers.pop()
 		return True
 
-	def SetValue(self, value):
+	def set_value(self, value):
 		print("\n==============================")
 		print("- {0} Adjust to: ${1} db -".format(self.serial_number, value), color='green', format='bold')
 		dsmu=[]
@@ -125,7 +125,7 @@ class AttenGroup(object):
 					ue = self.combo[ge][ui]
 					usw = self.units[ui].GetAtten(ue)
 					dsmu.extend(usw)
-					print("{0} {1} \t {2}".format(self.units[ui].GetModel(), ue, usw))
+					print("{0} {1} \t {2}".format(self.units[ui].get_model(), ue, usw))
 				value -= ge
 				break
 		print("------------------------------")
@@ -134,12 +134,12 @@ class AttenGroup(object):
 		self.serial.WriteIO(dsmu)
 		return value
 
-class AttenAdaura(object):
+class atten_adaura(object):
 	def __init__(self, model, ttyX):
 		self.model = model
 		self.serial = serial.Serial()
 		if ttyX == None:
-			self.serial.port = self.FindttyUSBx()
+			self.serial.port = self.find_tty_usb()
 		self.serial.baudrate=115200
 		self.serial.xonxoff=0
 		self.serial.rtscts=0
@@ -147,7 +147,7 @@ class AttenAdaura(object):
 		self.serial.bytesize=8
 		self.serial.timeout=1
 
-	def FindttyUSBx(self):
+	def find_tty_usb(self):
 		import os
 		ttyX = os.popen('ls /sys/class/tty/ | grep ttyACM', 'r')
 		lines = ttyX.read()
@@ -175,31 +175,31 @@ class AttenAdaura(object):
 		self.serial.close()
 		return rst
 
-	def Dump(self):
+	def dump(self):
 		print("{0} info:".format(self.model))
 		self.send_command("INFO")
-		self.GetStatus()
+		self.get_status()
 
-	def GetModel(self):
+	def get_model(self):
 		return self.model
 
-	def GetStatus(self):
+	def get_status(self):
 		return self.send_command("STATUS")
 
 	# chain: 1, 2, 3, 4
 	# value: 0-63
-	def SetValue(self, chain, value):
+	def set_value(self, chain, value):
 		if chain in [1, 2, 3, 4]:
 			print("set chain {0} to {1} db".format(chain, value))
 			self.send_command("SET {} {}".format(chain, value))
 		else:
 			print("error: chain must 1-4")
 
-	def SetGroupValue(self, value):
+	def set_group_value(self, value):
 		print("set all to {} db".format(value))
 		self.send_command("SAA {}".format(value))
 
-	def SetDefaultValue(self, value):
+	def set_default_value(self, value):
 		print("set all {} as power on".format(value))
 		self.send_command("DEFAULT_ATTEN {}".format(value))
 

@@ -11,10 +11,10 @@ import time
 import serial
 import getopt
 from hexdump import hexdump
-from attenuator import AttenAdaura
+from attenuator import atten_adaura
 from print_color import print
 
-def Usage():
+def usage():
 	print("For example:")
 	print("\t./usbtty_adaura.py -D </dev/ttyUSB-X> -v 103")
 	print("\t	-v <value>, set all channel to value")
@@ -30,7 +30,7 @@ if __name__ == '__main__':
 	try:
 		opts, args = getopt.getopt(argv, "D:us:e:i:w:d:v:c:")
 	except:
-		Usage()
+		usage()
 
 	unit_test=None
 	intv_waitting=2000
@@ -61,7 +61,7 @@ if __name__ == '__main__':
 			channel = int(arg)
 
 	try:
-		adaura = AttenAdaura("ADAURA-63", None)
+		adaura = atten_adaura("ADAURA-63", None)
 	except Exception as e:
 		print(e)
 		exit(-1)
@@ -69,13 +69,13 @@ if __name__ == '__main__':
 	# if unit_test == True:
 	# 	UnitTest(adaura)
 
-	# adaura.Dump()
+	# adaura.dump()
 	if set_value != None:
-		adaura.SetGroupValue(set_value)
+		adaura.set_group_value(set_value)
 
 	if start_value != None:
 		# init
-		adaura.SetGroupValue(start_value)
+		adaura.set_group_value(start_value)
 		# A: Ascend
 		# E: Exclud
 		# D: Descend
@@ -85,12 +85,12 @@ if __name__ == '__main__':
 
 		for val in range(start_value, stop_value, step_value):
 			if channel != None:
-				adaura.SetValue(channel, val)
+				adaura.set_value(channel, val)
 			else:
-				adaura.SetGroupValue(val)
+				adaura.set_group_value(val)
 			time.sleep(intv_waitting/1000)
 
 	if default_value != None:
-		adaura.SetDefaultValue(default_value)
+		adaura.set_default_value(default_value)
 
-	adaura.GetStatus()
+	adaura.get_status()
