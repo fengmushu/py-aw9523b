@@ -20,6 +20,7 @@ ds_min 		= [1,0,1,0,1,0, 	1,0,1,0,1,0,]
 ds_halt 	= [1,1,1,1,1,1, 	1,1,1,1,1,1,]
 ds_oops 	= [0,0,0,0,0,0, 	0,0,0,0,0,0,]
 
+ewhc_halt 	= [1, 1, 1, 1, 1, 1, 1, 1]
 ds_subfix_start = [0, 1, 1]
 ds_subfix_stop	= [1, 0, 1]
 ds_subfix_init	= [1, 1, 0]
@@ -149,13 +150,17 @@ class tty_dio_rotray(tty_usb_geehy):
 		ds = self.__value2mask(value)
 		# print(ds)
 		self.serial.open()
+		# stop prev
+		# ds_stop = ewhc_halt.copy()
+		# ds_stop.extend(ds_subfix_stop)
+		# self.write_io_raw(ds_stop, 0.1)
 		# to target pos
 		ds_start = ds.copy()
 		ds_start.extend(ds_subfix_start)
-		self.write_io_raw(ds_start, 0.1)
-		# TODO: wait ready()
+		self.write_io_raw(ds_start, 1)
+		# TODO: wait ready(): 9: Ready, 10: Busy, 11: Inpos, 12: hold
 		# stop prev distnation
-		ds_pause = ds.copy()
+		ds_pause = ewhc_halt.copy()
 		ds_pause.extend(ds_subfix_idle)
 		self.write_io_raw(ds_pause, 0.1)
 		self.serial.close()
@@ -163,32 +168,28 @@ class tty_dio_rotray(tty_usb_geehy):
 	def set_original(self):
 		print("Rotary original pos")
 		self.serial.open()
-		ds = self.__value2mask(0)
-		ds_orig = ds.copy()
+		ds_orig = ewhc_halt.copy()
 		ds_orig.extend(ds_subfix_init)
-		self.write_io_raw(ds_orig, 0.1)
-		time.sleep(5)
-		ds_pause = ds.copy()
+		self.write_io_raw(ds_orig, 3)
+		ds_pause = ewhc_halt.copy()
 		ds_pause.extend(ds_subfix_idle)
 		self.write_io_raw(ds_pause, 0.1)
 		self.serial.close()
 
 	def set_idle(self):
 		self.serial.open()
-		ds = self.__value2mask(0)
-		ds_lock = ds.copy()
+		ds_lock = ewhc_halt.copy()
 		ds_lock.extend(ds_subfix_idle)
 		self.write_io_raw(ds_lock, 0.1)
 		self.serial.close()
 
 	def unit_test(self):
 		self.set_original()
-		time.sleep(3)
-		for point in range(0, 11, 1):
+		for point in range(0, 13, 1):
 			self.set_value(point)
-			time.sleep(3)
+		for point in range(12, -1, -1):
+			self.set_value(point)
 		self.set_original()
-		time.sleep(3)
 
 		# self.serial.open()
 		# self.ReadIoRaw([1, 2, 3, 4, 13, 14, 15, 16])
