@@ -1,1 +1,4 @@
 SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", MODE="666", SYMLINK+="ttyUSBGeehy"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="04d8", ATTRS{idProduct}=="f494", MODE="666", SYMLINK+="ttyACMAdaura"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", MODE="666", SYMLINK+="ttyUSBWCH"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", MODE="666", SYMLINK+="ttyUSBFT232"
