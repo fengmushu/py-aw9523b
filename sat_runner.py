@@ -46,9 +46,9 @@ class sat_runner(object):
 	def init_attenuators(self):
 		if self.args.atten_type == ATTEN_TYPE_HP33321SX:
 			serial = tty_usb_geehy(None)
-			atten_sc = atten_unit("HP33321-SC", 3, [20, 40, 10])
-			atten_sd = atten_unit("HP33321-SD", 3, [30, 40, 5])
-			atten_sg = atten_unit("HP33321-SG", 3, [20, 5, 10])
+			atten_sc = atten_unit(atten_unit.ATTEN_MODE_HP33321_SC)
+			atten_sd = atten_unit(atten_unit.ATTEN_MODE_HP33321_SD)
+			atten_sg = atten_unit(atten_unit.ATTEN_MODE_HP33321_SG)
 			# init group
 			atten_gp_sc_sg = atten_group("SC-SG", serial, [atten_sg, atten_sc])
 			self.atten = atten_gp_sc_sg
@@ -111,13 +111,7 @@ class sat_runner(object):
 	def update_rssi(self):
 		rssi = -127
 		if self.rpc_router != None:
-			rssi = self.rpc_router.get_rssi(self.current_band)
-			if rssi < -90:
-				if self.current_band == 'ath16':
-					self.current_band = 'ath06'
-				else:
-					self.current_band = 'ath16'
-				rssi = self.rpc_router.get_rssi(self.current_band)
+			a,b,rssi = self.rpc_router.get_rssi(self.current_band)
 		return rssi
 
 	def run_samples(self, samples, intval):

@@ -9,12 +9,27 @@ import serial
 from print_color import print
 
 class atten_unit(object):
-	def __init__(self, model, switchs, values):
-		gears=[]
-		atten_sw={0:0,}
+	ATTEN_MODE_HP33321_SC = "HP33321-SC"
+	ATTEN_MODE_HP33321_SD = "HP33321-SD"
+	ATTEN_MODE_HP33321_SG = "HP33321-SG"
 
-		for sw in range(0, 2**switchs, 1):
-			bm=2**switchs
+	ATTEN_UNIT = {
+		ATTEN_MODE_HP33321_SC: [20, 40, 10],
+		ATTEN_MODE_HP33321_SD: [30, 40, 5],
+		ATTEN_MODE_HP33321_SG: [20, 5, 10],
+	}
+	def __init__(self, model):
+		gears=[]
+		atten_sw={0: 0,}
+
+		try:
+			num_switch = len(self.ATTEN_UNIT[model])
+			values = self.ATTEN_UNIT[model]
+		except:
+			raise Exception("atten unit init, model '{}' not found".format(model))
+
+		for sw in range(0, 2**num_switch, 1):
+			bm=2**num_switch
 			vi=len(values)-1
 			av=[]
 			atn=0
@@ -34,11 +49,11 @@ class atten_unit(object):
 
 		gears.sort()
 
-		self.switchs=switchs
-		self.gears=gears
-		self.model=model
-		self.atten_sw=atten_sw
-		self.busy=[]
+		self.num_switch = num_switch
+		self.gears = gears
+		self.model = model
+		self.atten_sw = atten_sw
+		self.busy = []
 
 	def dump(self):
 		print("{0} gears: {1}".format(self.model, len(self.atten_sw)))

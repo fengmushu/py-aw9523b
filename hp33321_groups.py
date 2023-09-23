@@ -10,9 +10,9 @@ import os
 import time
 import getopt
 from hexdump import hexdump
-from attenuator import atten_unit, atten_group
-from usbtty_geehy import tty_usb_geehy
 from print_color import print
+from attenuator import *
+from usbtty_geehy import *
 
 def UnitTest(ser):
 	print("Self unit test action...")
@@ -63,27 +63,27 @@ if __name__ == '__main__':
 		ttyX='/dev/ttyUSB0'
 
 	Ser = tty_usb_geehy(ttyX)
-	atten_sc = atten_unit("HP33321-SC", 3, [20, 40, 10])
-	atten_sd = atten_unit("HP33321-SD", 3, [30, 40, 5])
-	atten_sg = atten_unit("HP33321-SG", 3, [20, 5, 10])
+	atten_sc = atten_unit(atten_unit.ATTEN_MODE_HP33321_SC)
+	atten_sd = atten_unit(atten_unit.ATTEN_MODE_HP33321_SD)
+	atten_sg = atten_unit(atten_unit.ATTEN_MODE_HP33321_SG)
 
 	if unit_test == True:
 		UnitTest(Ser)
 
 	if atten == None:
 		usage()
-	# atten_gp_sc_sg_sd = AttenGroup("SC-SG-SD", Ser, [atten_sc, atten_sg, atten_sd])
-	# atten_gp_sc_sg_sd.dump()
-	# atten_gp_sc_sg_sd.set_value(atten)
+	# atten_grp = AttenGroup("SC-SG-SD", Ser, [atten_sc, atten_sg, atten_sd])
+	# atten_grp.dump()
+	# atten_grp.set_value(atten)
 
-	# atten_gp_sc_sg = AttenGroup("SC-SG", Ser, [atten_sc, atten_sg])
-	atten_gp_sc_sg = atten_group("SC-SG", Ser, [atten_sg, atten_sc])
-	atten_gp_sc_sg.dump()
-	atten_gp_sc_sg.set_value(init_atten)
+	atten_grp = atten_group("SC-SG", Ser, [atten_sc, atten_sg])
+	# atten_grp = atten_group("SC-SD", Ser, [atten_sc, atten_sd])
+	atten_grp.dump()
+	atten_grp.set_value(init_atten)
 	time.sleep(start_wait)
 
 	print("\nTarget: {} cell to 5 * {} = {}".format(atten, int(atten/5), int(atten/5)*5), color = "yellow", background='gray', format='bold')
 	sys.stdout.write(" serial port: {!r}, step:{:d} intv: {:d} sec.\n".format(ttyX, step_lvl, intv_waitting))
 	for av in range(init_atten, atten + 5, step_lvl):
-		atten_gp_sc_sg.set_value(av)
+		atten_grp.set_value(av)
 		time.sleep(intv_waitting)
