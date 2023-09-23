@@ -176,6 +176,13 @@ class tty_dio_rotray(tty_usb_geehy):
 		self.write_io_raw(ds_pause, 0.1)
 		self.serial.close()
 
+	def set_break(self, onoff):
+		print("Rotary break: {}".format(onoff))
+		if onoff == 1:
+			self.set_value(14)
+		else:
+			self.set_value(13)
+
 	def set_idle(self):
 		self.serial.open()
 		ds_lock = ewhc_halt.copy()
