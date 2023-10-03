@@ -75,7 +75,7 @@ class tty_usb_geehy(object):
 	def WriteIO(self, ds):
 		io_w = [0x3b,]
 		io_w.extend(ds)
-		print("serial io:", io_w)
+		# print("serial io:", io_w)
 		self.serial.open()
 		self.serial.write(io_w)
 		self.serial.flush()
@@ -99,7 +99,7 @@ class tty_usb_geehy(object):
 	def write_io_raw(self, ds, delay):
 		io_w = [0x3b,]
 		io_w.extend(ds)
-		print("serial io:", io_w)
+		# print("serial io:", io_w)
 		self.serial.write(io_w)
 		self.serial.flush()
 		# while True:
@@ -146,7 +146,7 @@ class tty_dio_rotray(tty_usb_geehy):
 		return self.__angle_to_point(angle)
 
 	def set_value(self, value):
-		print("\tio {}".format(value))
+		# print("\t--- io {}".format(value))
 		ds = self.__value2mask(value)
 		# print(ds)
 		self.serial.open()

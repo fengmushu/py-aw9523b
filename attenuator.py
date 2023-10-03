@@ -71,6 +71,8 @@ class atten_unit(object):
 		return self.atten_sw.get(gi)
 
 class atten_group(object):
+	MIN = 15
+	MAX = 115
 	def __init__(self, serial_number, serial, units):
 		self.serial_number=serial_number
 		self.units=units
@@ -150,6 +152,8 @@ class atten_group(object):
 		return value
 
 class atten_adaura(object):
+	MIN = 0
+	MAX = 63
 	def __init__(self, model, ttyX):
 		self.model = model
 		self.serial = serial.Serial()
@@ -211,7 +215,7 @@ class atten_adaura(object):
 			print("error: chain must 1-4")
 
 	def set_group_value(self, value):
-		print("set all to {} db".format(value))
+		# print("set all to {} db".format(value))
 		self.send_command("SAA {}".format(value))
 
 	def set_default_value(self, value):
